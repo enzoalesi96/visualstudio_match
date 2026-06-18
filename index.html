@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionMatch AI</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #eef2f7;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 16px;
+}
+
+.chat-container {
+  width: 100%;
+  max-width: 700px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.14);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.chat-header {
+  background: linear-gradient(135deg, #1a73e8, #4f8df7);
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.chat-header .logo { font-size: 26px; }
+.chat-header .title { font-size: 20px; font-weight: 700; }
+.chat-header .subtitle { font-size: 13px; opacity: 0.85; }
+
+/* ── Chat body ───────────────────────────────────────────────────── */
+.chat-body {
+  padding: 24px 20px;
+  min-height: 320px;
+  max-height: 560px;
+  overflow-y: auto;
+  background: #f7f9fc;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Burbujas ────────────────────────────────────────────────────── */
+.user-msg {
+  align-self: flex-end;
+  background: #1a73e8;
+  color: white;
+  padding: 11px 16px;
+  border-radius: 18px 18px 4px 18px;
+  max-width: 78%;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.bot-msg {
+  align-self: flex-start;
+  background: #e8ecf5;
+  color: #1a1a1a;
+  padding: 11px 16px;
+  border-radius: 18px 18px 18px 4px;
+  max-width: 78%;
+  font-size: 15px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* ── Typing indicator ────────────────────────────────────────────── */
+.typing {
+  align-self: flex-start;
+  background: #e8ecf5;
+  padding: 12px 18px;
+  border-radius: 18px 18px 18px 4px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.typing span {
+  width: 8px; height: 8px;
+  background: #888;
+  border-radius: 50%;
+  animation: bounce 1.2s infinite;
+}
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%,80%,100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+}
+
+/* ── Encabezado de resultados ────────────────────────────────────── */
+.results-header {
+  align-self: flex-start;
+  font-size: 14px;
+  color: #444;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+/* ── Cards de TVs ────────────────────────────────────────────────── */
+.cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.tv-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+  overflow: hidden;
+  display: flex;
+  gap: 0;
+  animation: fadeUp 0.35s ease both;
+  border: 1px solid #e4e9f0;
+  transition: box-shadow 0.2s;
+}
+.tv-card:hover { box-shadow: 0 6px 24px rgba(26,115,232,0.18); }
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(14px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.tv-card:nth-child(1) { animation-delay: 0.05s; }
+.tv-card:nth-child(2) { animation-delay: 0.12s; }
+.tv-card:nth-child(3) { animation-delay: 0.19s; }
+.tv-card:nth-child(4) { animation-delay: 0.26s; }
+.tv-card:nth-child(5) { animation-delay: 0.33s; }
+
+.card-rank {
+  width: 38px;
+  min-height: 100%;
+  background: #1a73e8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.card-rank.gold   { background: #f59e0b; }
+.card-rank.silver { background: #9ca3af; }
+.card-rank.bronze { background: #b45309; }
+
+.card-img {
+  width: 100px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: #f0f4fa;
+}
+.card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+.card-img.no-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: #bbb;
+}
+
+.card-body {
+  padding: 12px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.35;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pill {
+  background: #eef2f7;
+  border-radius: 20px;
+  padding: 2px 9px;
+  font-size: 11.5px;
+  color: #444;
+  font-weight: 500;
+}
+
+.card-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a73e8;
+  margin-top: 4px;
+}
+
+.card-seller {
+  font-size: 12px;
+  color: #888;
+}
+
+.btn-ver {
+  display: inline-block;
+  margin-top: 8px;
+  background: #1a73e8;
+  color: white;
+  padding: 7px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  align-self: flex-start;
+  transition: background 0.2s;
+}
+.btn-ver:hover { background: #1557b0; }
+
+/* ── Input ───────────────────────────────────────────────────────── */
+.chat-input {
+  display: flex;
+  border-top: 1px solid #e4e9f0;
+  background: white;
+}
+.chat-input input {
+  flex: 1;
+  padding: 16px 18px;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+.chat-input button {
+  background: #1a73e8;
+  color: white;
+  border: none;
+  padding: 16px 24px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+.chat-input button:hover { background: #1557b0; }
+.chat-input button:disabled { background: #94b4e8; cursor: not-allowed; }
+</style>
+</head>
+
+<body>
+<div class="chat-container">
+
+  <div class="chat-header">
+    <div class="logo">📺</div>
+    <div>
+      <div class="title">VisionMatch AI</div>
+      <div class="subtitle">Encuentra tu televisor ideal en segundos</div>
+    </div>
+  </div>
+
+  <div class="chat-body" id="chatBody"></div>
+
+  <div class="chat-input">
+    <input id="userInput" placeholder="55 pulgadas QLED hasta 3000 soles..." />
+    <button id="sendBtn" onclick="sendMessage()">Enviar</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────
+// CONFIG — cambia esta URL a tu Function App Python deployada en Azure
+// ─────────────────────────────────────────────────────────────────────────
+const API_URL = "https://TU_FUNCTION_APP.azurewebsites.net/api/chat";
+
+let firstMessage = true;
+
+// ── Validación mínima en frontend ─────────────────────────────────────────
+function esPreguntaTV(text) {
+  return /(pulgadas|led|qled|oled|nanocell|\b\d{2,3}\b)/i.test(text);
+}
+
+// ── Agregar mensaje de usuario ────────────────────────────────────────────
+function addUserMsg(text) {
+  const chat = document.getElementById("chatBody");
+  const div = document.createElement("div");
+  div.className = "user-msg";
+  div.textContent = text;
+  chat.appendChild(div);
+  scroll();
+}
+
+// ── Agregar mensaje de bot (texto) ────────────────────────────────────────
+function addBotMsg(text) {
+  const chat = document.getElementById("chatBody");
+  const div = document.createElement("div");
+  div.className = "bot-msg";
+  div.textContent = text;
+  chat.appendChild(div);
+  scroll();
+  return div;
+}
+
+// ── Typing indicator ──────────────────────────────────────────────────────
+function showTyping() {
+  const chat = document.getElementById("chatBody");
+  const div = document.createElement("div");
+  div.className = "typing";
+  div.id = "typingIndicator";
+  div.innerHTML = "<span></span><span></span><span></span>";
+  chat.appendChild(div);
+  scroll();
+}
+
+function hideTyping() {
+  const el = document.getElementById("typingIndicator");
+  if (el) el.remove();
+}
+
+// ── Render de cards top 5 ─────────────────────────────────────────────────
+function addProductCards(products, headerText) {
+  const chat = document.getElementById("chatBody");
+
+  // Encabezado
+  if (headerText) {
+    const h = document.createElement("div");
+    h.className = "bot-msg";
+    h.style.background = "#e0eaff";
+    h.style.color = "#1a3a7a";
+    h.textContent = headerText;
+    chat.appendChild(h);
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "cards-grid";
+
+  const rankColors = ["gold", "silver", "bronze", "", ""];
+
+  products.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "tv-card";
+
+    // Rank badge
+    const rankDiv = document.createElement("div");
+    rankDiv.className = `card-rank ${rankColors[i] || ""}`;
+    rankDiv.textContent = `#${i + 1}`;
+    card.appendChild(rankDiv);
+
+    // Imagen
+    const imgDiv = document.createElement("div");
+    if (p.imagen) {
+      imgDiv.className = "card-img";
+      imgDiv.innerHTML = `<img src="${p.imagen}" alt="${p.name}" onerror="this.parentElement.innerHTML='📺'; this.parentElement.className='card-img no-img';" />`;
+    } else {
+      imgDiv.className = "card-img no-img";
+      imgDiv.textContent = "📺";
+    }
+    card.appendChild(imgDiv);
+
+    // Cuerpo
+    const body = document.createElement("div");
+    body.className = "card-body";
+
+    body.innerHTML = `
+      <div class="card-name">${p.name || "Televisor"}</div>
+      <div class="card-meta">
+        ${p.familia ? `<span class="pill">📡 ${p.familia}</span>` : ""}
+        ${p.pulgadas ? `<span class="pill">📐 ${p.pulgadas}"</span>` : ""}
+      </div>
+      <div class="card-price">S/ ${Number(p.precio).toLocaleString("es-PE", {minimumFractionDigits: 0})}</div>
+      <div class="card-seller">🏪 ${p.vendedor || ""}</div>
+      ${p.url ? `<a class="btn-ver" href="${p.url}" target="_blank" rel="noopener">Ver producto →</a>` : ""}
+    `;
+
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+
+  chat.appendChild(grid);
+  scroll();
+}
+
+// ── Scroll al fondo ───────────────────────────────────────────────────────
+function scroll() {
+  const chat = document.getElementById("chatBody");
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ── Enviar mensaje ────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById("userInput");
+  const btn = document.getElementById("sendBtn");
+  const message = input.value.trim();
+  if (!message) return;
+
+  addUserMsg(message);
+  input.value = "";
+  btn.disabled = true;
+
+  // Primera interacción: saludo y esperar el query real
+  if (firstMessage) {
+    firstMessage = false;
+    addBotMsg(
+      "Hola 👋 soy VisionMatch AI.\nPara encontrar tu mejor televisor, indícame:\n  • Pulgadas\n  • Presupuesto (en soles)\n  • Familia (LED / QLED / OLED / NanoCell)\n\nEjemplo: 55 pulgadas QLED hasta 3000 soles"
+    );
+    btn.disabled = false;
+    return;
+  }
+
+  // Validación frontend
+  if (!esPreguntaTV(message)) {
+    addBotMsg(
+      "Solo puedo ayudarte con consultas de televisores 📺\n\nDime, por ejemplo:\n👉 55 pulgadas QLED hasta 3000 soles"
+    );
+    btn.disabled = false;
+    return;
+  }
+
+  // Llamar al backend Python
+  showTyping();
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
+
+    const data = await res.json();
+    hideTyping();
+
+    if (data.info) {
+      addBotMsg(data.info);
+    }
+
+    if (data.error) {
+      addBotMsg("⚠️ Ocurrió un error al consultar la base de datos. Intenta nuevamente.");
+    }
+
+    if (data.products && data.products.length > 0) {
+      addProductCards(data.products, data.message || null);
+    }
+
+  } catch (err) {
+    hideTyping();
+    addBotMsg("⚠️ No se pudo conectar con el servidor. Verifica tu conexión.");
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Enter para enviar
+document.getElementById("userInput").addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+// Mensaje de bienvenida automático al cargar
+window.addEventListener("load", () => {
+  addBotMsg(
+    "¡Bienvenido a VisionMatch AI! 📺\nCuéntame qué televisor necesitas y te daré las 5 mejores opciones de tu presupuesto.\n\nEjemplo:\n👉 55 pulgadas QLED hasta 3000 soles"
+  );
+});
+</script>
+</body>
+</html>

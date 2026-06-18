@@ -1,0 +1,22 @@
+# Variables de entorno — NUNCA subir al repo
+local.settings.json
+.env
+
+# Modelo entrenado — se incluye en deploy pero no en git
+model/kmeans_model.pkl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.eggs/
+
+# Azure
+.azure/
+bin/
+obj/
+
+# VS Code
+.vscode/

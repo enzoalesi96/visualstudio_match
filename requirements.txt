@@ -1,0 +1,13 @@
+# Azure Functions SDK
+azure-functions==1.21.3
+
+# SQL Server (pyodbc viene preinstalado en Azure Functions Linux)
+pyodbc==5.1.0
+
+# ML - clustering
+scikit-learn==1.5.2
+numpy==1.26.4
+joblib==1.4.2
+
+# OpenAI (opcional - para enriquecer la respuesta con LLM)
+openai==1.51.0
